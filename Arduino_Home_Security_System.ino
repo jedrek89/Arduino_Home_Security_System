@@ -1,21 +1,32 @@
 // Date and time functions using a DS1307 RTC connected via I2C and Wire lib
 #include <Wire.h>
 #include <LiquidCrystal.h>
-#include "RTClib.h"
+#include <RTClib.h>
 #include <Keypad.h>
+#include <Adafruit_Fingerprint.h>
+#include <SoftwareSerial.h>
 
+SoftwareSerial sim800l(16, 17); // TX, RX, YELLOW, PURPLE.
+//SoftwareSerial mySerial(18, 19);
+#define mySerial Serial1 // CZYTNIK LP
+Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
+
+int PIR_1 = 30; // CZUJNIK PIR_1
+int LED_1 = 31; // LED_1
 char key;
 void data_czas(); // Funkcja wyswietlanie daty i czasu
 void spr_pin();
+void czuwanie_zal();
 // Stały pin
 static char pin_s1 = '7';
 static char pin_s2 = '5';
 static char pin_s3 = '8';
 static char pin_s4 = '7';
 
+int akt_min;  // POBRANIE AKTUALNEJ MINUTY Z RTC
 int poz_dost = 0; // 0 - NIEPOPRAWNE    4 - OK
 int poz_wsk = 0;
-int stan_alarmu = 0; // Domyślny stan alarmu
+int stan_czuwania = 1; // 0 - CZUWANIE WYŁ, 2 CZUWANIE WŁ.
 
 
 RTC_DS1307 rtc;
@@ -38,8 +49,16 @@ byte colPins[COLS] = {26, 27, 28, 29};
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
 void setup () 
-{
+{ 
+  sim800l.begin(9600);
   Serial.begin(9600);
+  finger.begin(57600);
+  
+  pinMode(PIR_1, INPUT);  // CZUJNIK PIR_1 
+  pinMode(LED_1, OUTPUT); // LED_1
+  digitalWrite(PIR_1, LOW);
+
+  
   lcd.begin(20, 4);
   if (! rtc.begin()) 
   {
@@ -55,66 +74,144 @@ void setup ()
 
     // WYŚWIETLENIE EKRANU POWITALNEGO
    lcd.setCursor(0, 1);
-   lcd.print ("System Alarmowy     ");
+   lcd.print ("SYSTEM ALARMOWY     ");
    lcd.setCursor(0, 2);
    lcd.print ("PIN: ");
+
+   finger.getTemplateCount();
+   Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
+   Serial.println("Waiting for valid finger...");
    
 }
-///////////////////////LOOP/////////////////////////////// 
+////////////////////////////////////////////////////////// 
+//  LOOP 
+////////////////////////////////////////////////////////// 
 void loop () 
 {
    data_czas(); // Wywolanie funkcji wyświetlania czasu rzeczywistego
-   key = keypad.getKey();
+    getFingerprintIDez();
+    czuwanie_zal();
+   //czuwanie_zal();
+   /*key = keypad.getKey();
     if (key && poz_dost != 4) 
     {
       spr_pin();
     }
+    else if (poz_dost == 4)
+    {
+      lcd.setCursor(0, 1);
+      lcd.print ("A-ZAL  D-WYLACZ     ");
+        if (key == 'A' && poz_dost == 4)
+          {
+            czuwanie();
+            poz_dost = 0;
+          }
 
+        else if (key == 'D' && poz_dost == 4)
+          {
+            lcd.setCursor(0, 1);
+            lcd.print ("ALARM WYLACZONY !!  ");
+            delay (2000);
+            poz_dost = 0;
+          }
 
+         //else
+         //{
+            //lcd.setCursor(0, 1);
+            //lcd.print ("NIEPOPRAWNY WYBOR   ");
+            //delay(2000); 
+         //}
+    }
+
+*/
    delay(50);
    
 } 
-//////////////////////END LOOP////////////////////////////
+//////////////////////////////////////////////////////////
+//  END LOOP
+//////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////
+// FUNKCJA CZUWANIE
+//////////////////////////////////////////////////////////
+void czuwanie_zal()
+{        
+  
+         lcd.setCursor(0, 1);
+         lcd.print ("ALARM ZALACZONY !! ");
+         delay (100);
+         if (digitalRead(PIR_1) == HIGH)
+          {
+            digitalWrite(LED_1, HIGH);
 
-//FUNKCJA SPRAWDZĄCA POPRAWNOŚĆ PINU
+     
+          }
+          
+          else
+            {
+              digitalWrite(LED_1, LOW);  
+            }
+
+         
+         //stan_czuwania = 1; // zalaczenie czuwania       
+}
+
+//////////////////////////////////////////////////////////
+//  FUNKCJA ODLICZANIE
+//////////////////////////////////////////////////////////
+int odliczanie()
+{ 
+  DateTime now = rtc.now();
+  akt_min = now.minute(); 
+  lcd.setCursor(0, 3);
+  lcd.print(akt_min);          
+
+      
+         
+}
+
+//////////////////////////////////////////////////////////
+//  FUNKCJA SPRAWDZĄCA POPRAWNOŚĆ PINU
+//////////////////////////////////////////////////////////
+
 void spr_pin()
 { 
       if (poz_wsk == 0 && key == pin_s1 && poz_dost == 0)
       { 
          lcd.setCursor(5 + poz_wsk, 2);
          lcd.print('*');
-         lcd.setCursor(0, 3);
-         poz_dost++;
-         lcd.print (poz_dost);
+         lcd.setCursor(0, 3); // DO USUNIĘCIA
+         poz_dost=1;
+         lcd.print (poz_dost); // DO USUNIĘCIA
          poz_wsk++;  
       }
       else if (poz_wsk == 1 && key == pin_s2 && poz_dost == 1)
       {
          lcd.setCursor(5 + poz_wsk, 2);
          lcd.print('*');
-         lcd.setCursor(0, 3);
-         poz_dost++;
-         lcd.print (poz_dost);
+         lcd.setCursor(0, 3);   // DO USUNIĘCIA
+         poz_dost=2;
+         lcd.print (poz_dost);   // DO USUNIĘCIA
          poz_wsk++;  
       }
       else if (poz_wsk == 2 && key == pin_s3 && poz_dost == 2)
       {
          lcd.setCursor(5 + poz_wsk, 2);
          lcd.print('*');
-         lcd.setCursor(0, 3);
-         poz_dost++;
-         lcd.print (poz_dost);
+         lcd.setCursor(0, 3);   // DO USUNIĘCIA
+         poz_dost=3;
+         lcd.print (poz_dost);   // DO USUNIĘCIA
          poz_wsk++;   
       }
       else if (poz_wsk == 3 && key == pin_s4 && poz_dost == 3)
       {
          lcd.setCursor(5 + poz_wsk, 2);
          lcd.print('*');
-         lcd.setCursor(0, 3);
-         poz_dost++;
+         poz_dost=4;
+         lcd.setCursor(0, 3);   // DO USUNIĘCIA
+         lcd.print (poz_dost);  // DO USUNIĘCIA
          lcd.setCursor(0, 1);
-         lcd.print ("Pin ok!              ");
+         lcd.print ("PIN OK!             ");
          delay(2000);
          lcd.setCursor(0, 1);
          lcd.print ("                    ");
@@ -134,25 +231,28 @@ void spr_pin()
          if (poz_wsk >= 4 && poz_dost != 4)
          {
             lcd.setCursor(0, 1);
-            lcd.print ("Zly pin !     ");
+            lcd.print ("ZLY PIN !           ");
             delay(2000);
+            //lcd.setCursor(0, 1);
+            //lcd.print ("                    ");
+            //delay(200); 
             lcd.setCursor(0, 1);
-            lcd.print ("                     "); 
+            lcd.print ("WPROWADZ PIN        ");
             lcd.setCursor(5, 2);
-            lcd.print ("                ");
-            lcd.setCursor(0, 3); 
-            lcd.print (poz_dost);
-            //poz_wsk++;
+            lcd.print ("               ");
+            delay(1000); 
+            lcd.setCursor(0, 3);    // DO USUNIĘCIA 
+            lcd.print (poz_dost);   // DO USUNIĘCIA
+            poz_wsk++;
             poz_wsk = 0;
             poz_dost = 0;   
          }
          }    
-      
-   
+    
 }
 //////////////////////////////////////////////////////////
-
-//FUNKCJA WYSWIETLAJĄCA AKTUALNĄ DATĘ I CZAS
+//  RTC MODULE - SHOWING CURENT DATE AND TIME ON LCD
+//////////////////////////////////////////////////////////
   void data_czas()
   {
     DateTime now = rtc.now();
@@ -210,4 +310,86 @@ void spr_pin()
       lcd.setCursor(19, 0);
     }
   }  
+
 //////////////////////////////////////////////////////////
+//  FUNKCJA SPRAWDZAJĄCA ODCISK PALCA
+//////////////////////////////////////////////////////////
+
+int getFingerprintIDez() {
+  uint8_t p = finger.getImage();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.image2Tz();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  p = finger.fingerFastSearch();
+  if (p != FINGERPRINT_OK)  return -1;
+
+  // found a match!
+  
+  Serial.print("Found ID #"); Serial.print(finger.fingerID);
+  Serial.print(" with confidence of "); Serial.println(finger.confidence);
+
+    if (finger.fingerID == 0) //We have found a valid fingerprint with the id 1
+  {
+    lcd.setCursor(0, 3);
+    //lcd.print("                    ");
+    lcd.print("Odcisk 0");
+    delay (100);  
+  }
+
+  if (finger.fingerID == 1) //We have found a valid fingerprint with the id 1
+  {
+    lcd.setCursor(0, 3);
+    //lcd.print("                    ");
+    lcd.print("Odcisk 1");
+    delay (100);  
+  }
+
+ if (finger.fingerID == 2) //We have found a valid fingerprint with the id 1
+  {
+    lcd.setCursor(0, 3);
+    //lcd.print("                    ");
+    lcd.print("Odcisk 2");
+    delay (100); 
+  }
+
+ if (finger.fingerID == 3) //We have found a valid fingerprint with the id 1
+  {
+    lcd.setCursor(0,3);
+    //lcd.print("                    ");
+    lcd.print("Odcisk 3");
+    delay (100);  
+  }
+
+   if (finger.fingerID == 4) //We have found a valid fingerprint with the id 1
+  {
+    lcd.setCursor(0,3);
+    //lcd.print("                    ");
+    lcd.print("Odcisk 4");
+    delay (100);  
+  }
+
+  return finger.fingerID;
+}
+
+//////////////////////////////////////////////////////////
+//  WYSYŁANIE POWIADOMIEŃ SMS
+//////////////////////////////////////////////////////////
+
+void SendTextMessage()
+{
+  Serial.println("Sending Text...");
+  sim800l.print("AT+CMGF=1\r"); // Set the shield to SMS mode
+  delay(100);
+  sim800l.print("AT+CMGS=\"+48*********\"\r"); // Numer telefonu do powiadomień  
+  delay(200);
+  sim800l.print("Motion detected !"); //the content of the message
+  delay(500);
+  sim800l.print((char)26);//the ASCII code of the ctrl+z is 26 (required according to the datasheet)
+  delay(100);
+  sim800l.println();
+  Serial.println("Text Sent.");
+  delay(500);
+
+}
