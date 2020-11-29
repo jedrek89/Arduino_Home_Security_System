@@ -13,15 +13,16 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 
 int PIR_1 = 30; // CZUJNIK PIR_1
 int LED_1 = 31; // LED_1
-char key;
 void data_czas(); // Funkcja wyswietlanie daty i czasu
 void spr_pin();
-void czuwanie_zal();
+char key;
+//void czuwanie_zal();
 // Stały pin
 static char pin_s1 = '7';
 static char pin_s2 = '5';
 static char pin_s3 = '8';
 static char pin_s4 = '7';
+int menu = 0;
 
 int akt_min;  // POBRANIE AKTUALNEJ MINUTY Z RTC
 int poz_dost = 0; // 0 - NIEPOPRAWNE    4 - OK
@@ -89,47 +90,85 @@ void setup ()
 void loop () 
 {
    data_czas(); // Wywolanie funkcji wyświetlania czasu rzeczywistego
-    getFingerprintIDez();
-    czuwanie_zal();
-   //czuwanie_zal();
-   /*key = keypad.getKey();
-    if (key && poz_dost != 4) 
-    {
-      spr_pin();
-    }
-    else if (poz_dost == 4)
-    {
-      lcd.setCursor(0, 1);
-      lcd.print ("A-ZAL  D-WYLACZ     ");
-        if (key == 'A' && poz_dost == 4)
-          {
-            czuwanie();
-            poz_dost = 0;
-          }
+   getFingerprintIDez(); // Pobranie odcisku palca
+   key = keypad.getKey();
+   Serial.println(key);
+   Serial.println(menu);
 
-        else if (key == 'D' && poz_dost == 4)
-          {
-            lcd.setCursor(0, 1);
-            lcd.print ("ALARM WYLACZONY !!  ");
-            delay (2000);
-            poz_dost = 0;
-          }
+////////////////////////////////////////////////////////// 
+  if (key == 'A' || menu == 10)
+      {
+        menu = 10;
+        lcd.setCursor(0, 1);
+        lcd.print ("TRYB AKTYWACJI      "); 
+        //lcd.print ("ALARM WLACZONY !!   "); 
+        //delay(50);
+        key = keypad.getKey();
+        delay(50);
+          if (key && menu == 10)
+            { 
+              lcd.setCursor(0, 1);
+              lcd.print ("WPROWADZ PIN        ");  
+              menu = 10;
+              spr_pin();
+              //delay(50); 
+              
+            }
+              //spr_pin(); 
+            
+      }
+      
+////////////////////////////////////////////////////////// 
+  else if (key == 'D' || menu == 20)
+      {
+        menu = 20;
+        lcd.setCursor(0, 1);
+        lcd.print ("ALARM WYLACZONY !!  ");
+        Serial.println(menu);                    
+      }
 
-         //else
-         //{
-            //lcd.setCursor(0, 1);
-            //lcd.print ("NIEPOPRAWNY WYBOR   ");
-            //delay(2000); 
-         //}
-    }
+////////////////////////////////////////////////////////// 
+  else if (key == 'B' || menu == 30)
+      {
+        menu = 30;
+        lcd.setCursor(0, 1);
+        lcd.print ("OPCJE <> * #         ");
+        Serial.println(menu);         
+      }
+      
+////////////////////////////////////////////////////////// 
+        /*
+   else
+      {
+        lcd.setCursor(0, 1);
+        lcd.print ("WYBIERZ TRYB PRACY  ");
 
-*/
-   delay(50);
-   
+        delay(1000);
+        lcd.setCursor(0, 1);
+        lcd.print ("A - ZALACZ CZUWANIE  ");
+        delay(1000);
+        lcd.setCursor(0, 1);
+        lcd.print ("D - WYLACZ CZUWANIE  ");
+        delay(1000);
+        lcd.setCursor(0, 1);
+        lcd.print ("B - OPCJE            ");
+        delay(1000);
+
+      }
+        */
+        
+   delay(100);
 } 
+
+
 //////////////////////////////////////////////////////////
 //  END LOOP
 //////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////
+// KEYPAD
+//////////////////////////////////////////////////////////
+
 
 //////////////////////////////////////////////////////////
 // FUNKCJA CZUWANIE
@@ -335,7 +374,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0, 3);
     //lcd.print("                    ");
     lcd.print("Odcisk 0");
-    delay (100);  
+    //delay (100);  
   }
 
   if (finger.fingerID == 1) //We have found a valid fingerprint with the id 1
@@ -343,7 +382,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0, 3);
     //lcd.print("                    ");
     lcd.print("Odcisk 1");
-    delay (100);  
+    //delay (100);  
   }
 
  if (finger.fingerID == 2) //We have found a valid fingerprint with the id 1
@@ -351,7 +390,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0, 3);
     //lcd.print("                    ");
     lcd.print("Odcisk 2");
-    delay (100); 
+    //delay (100); 
   }
 
  if (finger.fingerID == 3) //We have found a valid fingerprint with the id 1
@@ -359,7 +398,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0,3);
     //lcd.print("                    ");
     lcd.print("Odcisk 3");
-    delay (100);  
+    //delay (100);  
   }
 
    if (finger.fingerID == 4) //We have found a valid fingerprint with the id 1
@@ -367,7 +406,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0,3);
     //lcd.print("                    ");
     lcd.print("Odcisk 4");
-    delay (100);  
+    //delay (100);  
   }
 
   return finger.fingerID;
