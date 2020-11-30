@@ -18,7 +18,7 @@ void spr_pin();
 char key;
 //void czuwanie_zal();
 //NUMERY TEL DO POWIADOMIEŃ
-String nr_tel_1 = "+48721257798";
+String nr_tel_1 = "*************";
 // Stały pin
 static char pin_s1 = '7';
 static char pin_s2 = '5';
