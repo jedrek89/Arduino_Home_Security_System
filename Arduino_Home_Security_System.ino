@@ -114,7 +114,6 @@ void loop ()
         getFingerprintIDez();
         Serial.println("Odcisk:");
         Serial.println(fingerprint_ID);
-        //delay (50);
         if (fingerprint_ID == 1 || fingerprint_ID == 2 || fingerprint_ID == 3 || fingerprint_ID == 4 )
           {
             lcd.setCursor(0, 1);
@@ -153,7 +152,6 @@ void loop ()
         getFingerprintIDez();
         Serial.println("Odcisk:");
         Serial.println(fingerprint_ID);
-        delay (50);
         if (fingerprint_ID == 1 || fingerprint_ID == 2 || fingerprint_ID == 3 || fingerprint_ID == 4 )
           {
             lcd.setCursor(0, 1);
@@ -166,13 +164,13 @@ void loop ()
             fingerprint_ID = 0;
             menu = 0; 
           }
-        if (key && poz_dost !=4 && menu == 10)
+        if (key && poz_dost !=4 && menu == 20)
             {
                 spr_pin();
                   if (poz_dost == 4)
                     {
                       lcd.setCursor(0, 1);
-                      lcd.print ("CZUWANIE ZAL        ");
+                      lcd.print ("CZUWANIE WYL        ");
                       delay (1000);
                       stan_czuwania = 0;
                       poz_dost = 0;
@@ -191,7 +189,7 @@ void loop ()
         Serial.println(menu);         
       }
            
-   delay(100);
+   //delay(100);
 } 
 
 //////////////////////////////////////////////////////////
@@ -313,8 +311,6 @@ void spr_pin()
             lcd.setCursor(5, 2);
             lcd.print ("               ");
             delay(1000); 
-            lcd.setCursor(0, 3);    // DO USUNIĘCIA 
-            lcd.print (poz_dost);   // DO USUNIĘCIA
             poz_wsk++;
             poz_wsk = 0;
             poz_dost = 0;   
