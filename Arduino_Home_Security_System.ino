@@ -27,7 +27,7 @@ int menu = 0;
 int akt_min;  // POBRANIE AKTUALNEJ MINUTY Z RTC
 int poz_dost = 0; // 0 - NIEPOPRAWNE    4 - OK
 int poz_wsk = 0;
-int stan_czuwania = 1; // 0 - CZUWANIE WYŁ, 2 CZUWANIE WŁ.
+int stan_czuwania = 0; // 0 - CZUWANIE WYŁ, 2 CZUWANIE WŁ.
 
 
 RTC_DS1307 rtc;
@@ -49,29 +49,29 @@ byte colPins[COLS] = {26, 27, 28, 29};
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
-void setup () 
-{ 
+void setup ()
+{
   sim800l.begin(9600);
   Serial.begin(9600);
   finger.begin(57600);
-  
-  pinMode(PIR_1, INPUT);  // CZUJNIK PIR_1 
+
+  pinMode(PIR_1, INPUT);  // CZUJNIK PIR_1
   pinMode(LED_1, OUTPUT); // LED_1
   digitalWrite(PIR_1, LOW);
 
-  
+
   lcd.begin(20, 4);
-  if (! rtc.begin()) 
+  if (! rtc.begin())
   {
     lcd.print("Couldn't find RTC");
     while (1);
   }
-  if (! rtc.isrunning()) 
+  if (! rtc.isrunning())
   {
     lcd.print("RTC is NOT running!");
   }
     //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));// USTAWIENIE CZASU Z KOMPUTERA
-    //rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));// MANUALNE USTAWIENIE CZASU 
+    //rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));// MANUALNE USTAWIENIE CZASU
 
     // WYŚWIETLENIE EKRANU POWITALNEGO
    lcd.setCursor(0, 1);
@@ -82,61 +82,84 @@ void setup ()
    finger.getTemplateCount();
    Serial.print("Sensor contains "); Serial.print(finger.templateCount); Serial.println(" templates");
    Serial.println("Waiting for valid finger...");
-   
+
 }
-////////////////////////////////////////////////////////// 
-//  LOOP 
-////////////////////////////////////////////////////////// 
-void loop () 
+//////////////////////////////////////////////////////////
+//  LOOP
+//////////////////////////////////////////////////////////
+void loop ()
 {
    data_czas(); // Wywolanie funkcji wyświetlania czasu rzeczywistego
    getFingerprintIDez(); // Pobranie odcisku palca
-   key = keypad.getKey();
-   Serial.println(key);
    Serial.println(menu);
+  if (menu == 0)
+    {
+      key_pad();
+    }
 
-////////////////////////////////////////////////////////// 
-  if (key == 'A' || menu == 10)
+  if (stan_czuwania == 1)
+    {
+      czuwanie_zal();
+    }
+
+//////////////////////////////////////////////////////////
+  if (key == 'A' || menu == 10 && stan_czuwania == 0)
       {
         menu = 10;
         lcd.setCursor(0, 1);
-        lcd.print ("TRYB AKTYWACJI      "); 
-        //lcd.print ("ALARM WLACZONY !!   "); 
-        //delay(50);
-        key = keypad.getKey();
-        delay(50);
-          if (key && menu == 10)
-            { 
-              lcd.setCursor(0, 1);
-              lcd.print ("WPROWADZ PIN        ");  
-              menu = 10;
-              spr_pin();
-              //delay(50); 
-              
-            }
-              //spr_pin(); 
-            
+        lcd.print ("TRYB AKTYWACJI      ");
+        delay (100);
+        key_pad();
+        if (key && poz_dost !=4 && menu == 10)
+        {
+            spr_pin();
+            if (poz_dost == 4)
+              {
+                lcd.setCursor(0, 1);
+                lcd.print ("CZUWANIE ZAL        ");
+                delay (1000);
+                stan_czuwania = 1;
+                poz_dost = 0;
+                menu = 0;
+              }
+        }
+
       }
-      
-////////////////////////////////////////////////////////// 
-  else if (key == 'D' || menu == 20)
+
+//////////////////////////////////////////////////////////
+  if (key == 'D' || menu == 20 && stan_czuwania == 1)
       {
         menu = 20;
         lcd.setCursor(0, 1);
-        lcd.print ("ALARM WYLACZONY !!  ");
-        Serial.println(menu);                    
+        lcd.print ("TRYB DEZAKTYWACJI   ");
+        delay (100);
+        key_pad();
+        if (key && poz_dost !=4 && menu == 20)
+        {
+            spr_pin();
+            if (poz_dost == 4)
+              {
+                lcd.setCursor(0, 1);
+                lcd.print ("CZUWANIE WYL        ");
+                delay (1000);
+                stan_czuwania = 0;
+                poz_dost = 0;
+                menu = 0;
+              }
+        }
+
       }
 
-////////////////////////////////////////////////////////// 
-  else if (key == 'B' || menu == 30)
+//////////////////////////////////////////////////////////
+  if (key == 'B' || menu == 30)
       {
         menu = 30;
         lcd.setCursor(0, 1);
         lcd.print ("OPCJE <> * #         ");
-        Serial.println(menu);         
+        Serial.println(menu);
       }
-      
-////////////////////////////////////////////////////////// 
+
+//////////////////////////////////////////////////////////
         /*
    else
       {
@@ -156,9 +179,9 @@ void loop ()
 
       }
         */
-        
+
    delay(100);
-} 
+}
 
 
 //////////////////////////////////////////////////////////
@@ -168,45 +191,48 @@ void loop ()
 //////////////////////////////////////////////////////////
 // KEYPAD
 //////////////////////////////////////////////////////////
-
+void key_pad()
+  {
+      key = keypad.getKey();
+      Serial.println(key);
+      delay(100);
+  }
 
 //////////////////////////////////////////////////////////
 // FUNKCJA CZUWANIE
 //////////////////////////////////////////////////////////
 void czuwanie_zal()
-{        
-  
-         lcd.setCursor(0, 1);
-         lcd.print ("ALARM ZALACZONY !! ");
-         delay (100);
+{
+
+
          if (digitalRead(PIR_1) == HIGH)
           {
             digitalWrite(LED_1, HIGH);
 
-     
+
           }
-          
+
           else
             {
-              digitalWrite(LED_1, LOW);  
+              digitalWrite(LED_1, LOW);
             }
 
-         
-         //stan_czuwania = 1; // zalaczenie czuwania       
+
+         //stan_czuwania = 1; // zalaczenie czuwania
 }
 
 //////////////////////////////////////////////////////////
 //  FUNKCJA ODLICZANIE
 //////////////////////////////////////////////////////////
 int odliczanie()
-{ 
+{
   DateTime now = rtc.now();
-  akt_min = now.minute(); 
+  akt_min = now.minute();
   lcd.setCursor(0, 3);
-  lcd.print(akt_min);          
+  lcd.print(akt_min);
 
-      
-         
+
+
 }
 
 //////////////////////////////////////////////////////////
@@ -214,15 +240,15 @@ int odliczanie()
 //////////////////////////////////////////////////////////
 
 void spr_pin()
-{ 
+{
       if (poz_wsk == 0 && key == pin_s1 && poz_dost == 0)
-      { 
+      {
          lcd.setCursor(5 + poz_wsk, 2);
          lcd.print('*');
          lcd.setCursor(0, 3); // DO USUNIĘCIA
          poz_dost=1;
          lcd.print (poz_dost); // DO USUNIĘCIA
-         poz_wsk++;  
+         poz_wsk++;
       }
       else if (poz_wsk == 1 && key == pin_s2 && poz_dost == 1)
       {
@@ -231,7 +257,7 @@ void spr_pin()
          lcd.setCursor(0, 3);   // DO USUNIĘCIA
          poz_dost=2;
          lcd.print (poz_dost);   // DO USUNIĘCIA
-         poz_wsk++;  
+         poz_wsk++;
       }
       else if (poz_wsk == 2 && key == pin_s3 && poz_dost == 2)
       {
@@ -240,7 +266,7 @@ void spr_pin()
          lcd.setCursor(0, 3);   // DO USUNIĘCIA
          poz_dost=3;
          lcd.print (poz_dost);   // DO USUNIĘCIA
-         poz_wsk++;   
+         poz_wsk++;
       }
       else if (poz_wsk == 3 && key == pin_s4 && poz_dost == 3)
       {
@@ -255,13 +281,13 @@ void spr_pin()
          lcd.setCursor(0, 1);
          lcd.print ("                    ");
          lcd.setCursor(5, 2);
-         lcd.print ("              "); 
+         lcd.print ("              ");
          poz_wsk++;
-         poz_wsk = 0;  
+         poz_wsk = 0;
       }
-      
+
       else
-      { 
+      {
          lcd.setCursor(5 + poz_wsk, 2);
          lcd.print('*');
          lcd.setCursor(0, 3);
@@ -274,20 +300,20 @@ void spr_pin()
             delay(2000);
             //lcd.setCursor(0, 1);
             //lcd.print ("                    ");
-            //delay(200); 
+            //delay(200);
             lcd.setCursor(0, 1);
             lcd.print ("WPROWADZ PIN        ");
             lcd.setCursor(5, 2);
             lcd.print ("               ");
-            delay(1000); 
-            lcd.setCursor(0, 3);    // DO USUNIĘCIA 
+            delay(1000);
+            lcd.setCursor(0, 3);    // DO USUNIĘCIA
             lcd.print (poz_dost);   // DO USUNIĘCIA
             poz_wsk++;
             poz_wsk = 0;
-            poz_dost = 0;   
+            poz_dost = 0;
          }
-         }    
-    
+         }
+
 }
 //////////////////////////////////////////////////////////
 //  RTC MODULE - SHOWING CURENT DATE AND TIME ON LCD
@@ -295,7 +321,7 @@ void spr_pin()
   void data_czas()
   {
     DateTime now = rtc.now();
-    // Wyswietlanie daty i dnia tygodnia  
+    // Wyswietlanie daty i dnia tygodnia
     lcd.setCursor(0, 0);
     //lcd.print(daysOfTheWeek[now.dayOfTheWeek()]);
     lcd.print(now.day());
@@ -304,13 +330,13 @@ void spr_pin()
     lcd.print('/');
     lcd.print(now.year());
     // Wyswietlanie godziny
-    lcd.setCursor(11, 0);    
+    lcd.setCursor(11, 0);
     if (now.hour()<10)
     {
       lcd.print('0');
       lcd.setCursor(12, 0);
       lcd.print(now.hour());
-      lcd.setCursor(13, 0);        
+      lcd.setCursor(13, 0);
     }
     else
     {
@@ -325,7 +351,7 @@ void spr_pin()
       lcd.print('0');
       lcd.setCursor(15, 0);
       lcd.print(now.minute());
-      lcd.setCursor(16, 0);        
+      lcd.setCursor(16, 0);
     }
     else
     {
@@ -341,14 +367,14 @@ void spr_pin()
       lcd.print('0');
       lcd.setCursor(18, 0);
       lcd.print(now.second());
-      lcd.setCursor(19, 0);        
+      lcd.setCursor(19, 0);
     }
     else
     {
       lcd.print(now.second());
       lcd.setCursor(19, 0);
     }
-  }  
+  }
 
 //////////////////////////////////////////////////////////
 //  FUNKCJA SPRAWDZAJĄCA ODCISK PALCA
@@ -365,7 +391,7 @@ int getFingerprintIDez() {
   if (p != FINGERPRINT_OK)  return -1;
 
   // found a match!
-  
+
   Serial.print("Found ID #"); Serial.print(finger.fingerID);
   Serial.print(" with confidence of "); Serial.println(finger.confidence);
 
@@ -374,7 +400,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0, 3);
     //lcd.print("                    ");
     lcd.print("Odcisk 0");
-    //delay (100);  
+    //delay (100);
   }
 
   if (finger.fingerID == 1) //We have found a valid fingerprint with the id 1
@@ -382,7 +408,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0, 3);
     //lcd.print("                    ");
     lcd.print("Odcisk 1");
-    //delay (100);  
+    //delay (100);
   }
 
  if (finger.fingerID == 2) //We have found a valid fingerprint with the id 1
@@ -390,7 +416,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0, 3);
     //lcd.print("                    ");
     lcd.print("Odcisk 2");
-    //delay (100); 
+    //delay (100);
   }
 
  if (finger.fingerID == 3) //We have found a valid fingerprint with the id 1
@@ -398,7 +424,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0,3);
     //lcd.print("                    ");
     lcd.print("Odcisk 3");
-    //delay (100);  
+    //delay (100);
   }
 
    if (finger.fingerID == 4) //We have found a valid fingerprint with the id 1
@@ -406,7 +432,7 @@ int getFingerprintIDez() {
     lcd.setCursor(0,3);
     //lcd.print("                    ");
     lcd.print("Odcisk 4");
-    //delay (100);  
+    //delay (100);
   }
 
   return finger.fingerID;
@@ -421,7 +447,7 @@ void SendTextMessage()
   Serial.println("Sending Text...");
   sim800l.print("AT+CMGF=1\r"); // Set the shield to SMS mode
   delay(100);
-  sim800l.print("AT+CMGS=\"+48*********\"\r"); // Numer telefonu do powiadomień  
+  sim800l.print("AT+CMGS=\"+48*********\"\r"); // Numer telefonu do powiadomień
   delay(200);
   sim800l.print("Motion detected !"); //the content of the message
   delay(500);
