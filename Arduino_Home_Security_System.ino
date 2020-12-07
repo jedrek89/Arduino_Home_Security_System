@@ -20,7 +20,7 @@ void spr_pin();
 char key;
 //void czuwanie_zal();
 //NUMERY TEL DO POWIADOMIEŃ
-String nr_tel_1 = "+48.........";
+String nr_tel_1 = "+48*********";
 // Stały pin
 static char pin_s1 = '7';
 static char pin_s2 = '5';
@@ -121,7 +121,7 @@ void loop ()
     }
 
 ////////////////////////////////////////////////////////// 
-  if (key == 'A' || menu == 10 && stan_czuwania == 0)
+  if ((key == 'A' || menu == 10) && stan_czuwania == 0)
       {
         menu = 10;
         lcd.setCursor(0, 1);
@@ -165,7 +165,7 @@ void loop ()
       }
       
 ////////////////////////////////////////////////////////// 
-  if (key == 'D' || menu == 20 && stan_czuwania == 1)
+  if ((key == 'D' || menu == 20) && stan_czuwania == 1)
       {
         menu = 20;
         lcd.setCursor(0, 1);
@@ -177,7 +177,7 @@ void loop ()
         if (fingerprint_ID == 1 || fingerprint_ID == 2 || fingerprint_ID == 3 || fingerprint_ID == 4 )
           {
             lcd.setCursor(0, 1);
-            lcd.print ("CZUWANIE WYL        ");
+            lcd.print ("CZUWANIE WYLACZONE !");
             delay (1000);
             stan_czuwania = 0;
             poz_dost = 0;
@@ -192,7 +192,7 @@ void loop ()
                   if (poz_dost == 4)
                     {
                       lcd.setCursor(0, 1);
-                      lcd.print ("CZUWANIE WYL        ");
+                      lcd.print ("CZUWANIE WYLACZONE !");
                       delay (1000);
                       stan_czuwania = 0;
                       poz_dost = 0;
